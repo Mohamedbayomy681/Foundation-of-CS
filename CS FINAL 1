@@ -1,0 +1,39 @@
+import random
+
+def mod_exp(base, exp, mod):
+    return pow(base, exp, mod)
+
+def keygen(p, g):
+    x = random.randint(1, p - 2)
+    h = mod_exp(g, x, p)
+    public_key = (p, g, h)
+    private_key = x
+    return public_key, private_key
+
+def encrypt(public_key, m):
+    p, g, h = public_key
+    k = random.randint(1, p - 2)
+    c1 = mod_exp(g, k, p)
+    c2 = (m * mod_exp(h, k, p)) % p
+    return (c1, c2)
+
+def decrypt(private_key, p, ciphertext):
+    c1, c2 = ciphertext
+    s = mod_exp(c1, private_key, p)
+    s_inv = pow(s, -1, p)
+    m = (c2 * s_inv) % p
+    return m
+
+if __name__ == "__main__":
+    p = 101
+    g = 2
+    public_key, private_key = keygen(p, g)
+    print(f"Public Key: {public_key}")
+    print(f"Private Key: {private_key}")
+
+    message = 15
+    ciphertext = encrypt(public_key, message)
+    print(f"Ciphertext: {ciphertext}")
+
+    decrypted_message = decrypt(private_key, p, ciphertext)
+    print(f"Decrypted Message: {decrypted_message}")
