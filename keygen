@@ -1,0 +1,61 @@
+import random
+
+# Function to perform modular exponentiation: (base^exp) % mod
+def mod_exp(base, exp, mod):
+    return pow(base, exp, mod)
+
+# Function to check if a number is prime
+def is_prime(n):
+    if n <= 1:
+        return False
+    if n == 2:
+        return True
+    if n % 2 == 0:
+        return False
+    for i in range(3, int(n ** 0.5) + 1, 2):
+        if n % i == 0:
+            return False
+    return True
+
+# Function to generate a random prime number in the range [low, high]
+def generate_prime(low, high):
+    while True:
+        num = random.randint(low, high)
+        if is_prime(num):
+            return num
+
+# Function to find a random generator g for a prime p
+def find_generator(p):
+    candidates = []
+    for g in range(2, p):
+        if all(mod_exp(g, k, p) != 1 for k in range(1, p - 1)):
+            candidates.append(g)
+    return random.choice(candidates) if candidates else None
+
+# Function to generate public and private keys
+def keygen(p, g):
+    x = random.randint(1, p - 2)
+    h = mod_exp(g, x, p)
+    public_key = (p, g, h)
+    private_key = x
+    return public_key, private_key
+
+if __name__ == "__main__":
+    p = generate_prime(100, 500)
+    print(f"Generated Prime p: {p}")
+    
+    g = find_generator(p)
+    if g is None:
+        print("Failed to find a generator for the given prime.")
+    else:
+        print(f"Generator (g): {g}")
+        
+        public_key, private_key = keygen(p, g)
+        print(f"Public Key: {public_key}")
+        print(f"Private Key: {private_key}")
+
+        # Save keys to files
+        with open("public_key.txt", "w") as pub_file:
+            pub_file.write(f"{public_key[0]} {public_key[1]} {public_key[2]}")
+        with open("private_key.txt", "w") as priv_file:
+            priv_file.write(str(private_key))
