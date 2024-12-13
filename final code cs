@@ -1,0 +1,108 @@
+import random
+import os
+
+# Function to perform modular exponentiation: (base^exp) % mod
+def mod_exp(base, exp, mod):
+    return pow(base, exp, mod)
+
+# Function to check if a number is prime
+def is_prime(n):
+    if n <= 1:
+        return False
+    if n == 2:
+        return True
+    if n % 2 == 0:
+        return False
+    for i in range(3, int(n ** 0.5) + 1, 2):
+        if n % i == 0:
+            return False
+    return True
+
+# Function to generate a random prime number in the range [low, high]
+def generate_prime(low, high):
+    while True:
+        num = random.randint(low, high)
+        if is_prime(num):
+            return num
+
+# Function to find a random generator g for a prime p
+def find_generator(p):
+    candidates = []
+    for g in range(2, p):
+        # Check if g is a generator for p
+        # A generator g satisfies: g^k % p != 1 for all 1 <= k < p-1
+        if all(mod_exp(g, k, p) != 1 for k in range(1, p - 1)):
+            candidates.append(g)
+    # Randomly select a generator from the valid candidates
+    return random.choice(candidates) if candidates else None
+
+# Function to generate public and private keys
+def keygen(p, g):
+    # Select a random private key x in the range [1, p-2]
+    x = random.randint(1, p - 2)
+    # Compute h = g^x % p
+    h = mod_exp(g, x, p)
+    # Public key consists of (p, g, h)
+    public_key = (p, g, h)
+    # Private key is x
+    private_key = x
+    return public_key, private_key
+
+# Function to encrypt a message m using the public key
+def encrypt(public_key, m):
+    p, g, h = public_key
+    # If the message is a string, convert it to a list of integers
+    if isinstance(m, str):
+        m = [ord(c) for c in m]  # Convert each character to its ASCII value
+    
+    # Select a random ephemeral key k in the range [1, p-2]
+    k = random.randint(1, p - 2)
+    # Compute c1 = g^k % p
+    c1 = mod_exp(g, k, p)
+    # Compute c2 = (m * h^k) % p, where h^k = (g^x)^k mod p
+    c2 = [(msg * mod_exp(h, k, p)) % p for msg in m]
+    # Ciphertext is the tuple (c1, c2)
+    return (c1, c2)
+
+# Function to decrypt a ciphertext using the private key
+def decrypt(private_key, p, ciphertext):
+    c1, c2 = ciphertext
+    # Compute shared secret s = c1^x % p, where x is the private key
+    s = mod_exp(c1, private_key, p)
+    # Compute the modular multiplicative inverse of s modulo p
+    s_inv = pow(s, -1, p)
+    # Recover the original message: m = (c2 * s_inv) % p
+    m = [(msg * s_inv) % p for msg in c2]
+    
+    # If the message was originally a string, convert it back to characters
+    if all(isinstance(i, int) for i in m):
+        m = ''.join(chr(i) for i in m)  # Convert back to string characters
+    return m
+
+if __name__ == "__main__":
+    # Generate a random prime number p in the range [100, 500] (you can choose a larger range)
+    p = generate_prime(100, 500)
+    print(f"Generated Prime p: {p}")
+    
+    # Find a random generator g for the prime p
+    g = find_generator(p)
+    if g is None:
+        print("Failed to find a generator for the given prime.")
+    else:
+        print(f"Generator (g): {g}")
+        
+        # Generate public and private keys
+        public_key, private_key = keygen(p, g)
+        print(f"Public Key: {public_key}")
+        print(f"Private Key: {private_key}")
+        
+        # Input the message to be encrypted (as a string or integer)
+        message = input("Enter a message (integer or string): ")
+        
+        # Encrypt the message using the public key
+        ciphertext = encrypt(public_key, message)
+        print(f"Ciphertext: {ciphertext}")
+        
+        # Decrypt the ciphertext using the private key
+        decrypted_message = decrypt(private_key, p, ciphertext)
+        print(f"Decrypted Message: {decrypted_message}")
